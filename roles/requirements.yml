@@ -1,0 +1,5 @@
+---
+- src: git@gitlab.fast-servers.eu:galaxy-roles/vmware.guest.git
+  scm: git
+  version: "develop"
+  name: vmware.guest

@@ -1,0 +1,22 @@
+---
+
+- hosts: '{{ limit_hostgroup }}'
+  gather_facts: no
+  connection: local
+  become: no
+  vars:
+    vmguest_wait_for_ip_address: yes
+
+  roles:
+    - { role: vmware.guest, when: "use_vcenter == 'true'" }
+
+- hosts: '{{ limit_hostgroup }}'
+  gather_facts: '{{ newinstall }}'
+  become: yes
+  vars:
+    yumrepo_manage: True
+#  ignore_errors: true
+  roles:
+    - { role: base.vm, when: "newinstall == ' true'and (ansible_local.build_completed.general.completed != 'true')" }
+#  tasks: 
+#    - debug: msg="{{ ansible_local.build_completed }}"

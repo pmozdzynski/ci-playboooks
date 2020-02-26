@@ -17,6 +17,6 @@
     yumrepo_manage: True
 #  ignore_errors: true
   roles:
-    - { role: base.vm, when: "newinstall == ' true'and (ansible_local.build_completed.general.completed != 'true')" }
+    - { role: base.vm, when: "newinstall == 'true' and (ansible_local.build_completed.general.completed != 'true')" }
   tasks: 
     - debug: msg="{{ ansible_local.build_completed }}"

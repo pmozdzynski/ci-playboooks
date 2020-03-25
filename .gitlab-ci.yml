@@ -13,4 +13,4 @@ update inventory:
     - master
   script: 
     - echo "starting systembase"
-    - ./systembase.sh
+    - ansible-playbook playbooks/systembase.yml -i $inventory -f 5 --private-key /opt/jenkins/secrets/ansible.key  --vault-password-file /opt/jenkins/secrets/vault.txt -e limit_hostgroup=$limit_hostgroup -e use_vcenter=true -e vcenter_username=administrator@vsphere.local -e newinstall=true -e vcenter_password=$vcenter_password ; done

@@ -1,0 +1,16 @@
+stages:
+  - deploy
+
+variables:
+  ANSIBLE_FORCE_COLOR: 'true'
+  GIT_DEPTH: 10
+
+update inventory:
+  stage: deploy
+  tags: 
+    - fse-gibraltar
+  only: 
+    - master
+  script: 
+    - echo "starting systembase"
+    - ./systembase.sh

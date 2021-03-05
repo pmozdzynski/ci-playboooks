@@ -21,11 +21,6 @@
   tasks:
     - debug: msg="{{ ansible_local.build_completed }}"
 
-
-# now the remaining tasks
-# kubernetes systems first
-
----
 - hosts: kubernetz
   gather_facts: yes
   become: yes

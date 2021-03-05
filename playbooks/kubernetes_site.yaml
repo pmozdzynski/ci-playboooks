@@ -3,20 +3,20 @@
   gather_facts: yes
   become: yes
   roles:
-    - { role: docker, tags: docker }
+    - { role: configure.docker, tags: docker }
 
 - hosts: k8s_master
   gather_facts: yes
   become: yes
   roles:
-    - { role: kubernetes/master, tags: master }
+    - { role: configure.kubernetes/master, tags: master }
     - { role: cni, tags: cni }
 
 - hosts: k8s_node
   gather_facts: yes
   become: yes
   roles:
-    - { role: kubernetes/node, tags: node }
+    - { role: configure.kubernetes/node, tags: node }
 
 - hosts: k8s_master
   gather_facts: yes

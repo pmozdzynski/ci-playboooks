@@ -19,7 +19,7 @@
   version: "master"
   name: configure.kubernetes
 
-- src: git@gitlab.fast-servers.eu:galaxy-roles/common.git
+- src: git@gitlab.fast-servers.eu:galaxy-roles/commons.git
   scm: git
   version: "master"
-  name: common
+  name: commons

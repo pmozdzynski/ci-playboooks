@@ -8,3 +8,13 @@
   scm: git
   version: "master"
   name: base.vm
+
+- src: git@gitlab.fast-servers.eu:galaxy-roles/configure.docker.git
+  scm: git
+  version: "master"
+  name: configure.docker
+
+- src: git@gitlab.fast-servers.eu:galaxy-roles/configure.kubernetes.git
+  scm: git
+  version: "master"
+  name: configure.kubernetes

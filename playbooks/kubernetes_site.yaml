@@ -10,7 +10,7 @@
   become: yes
   roles:
     - { role: configure.kubernetes/master, tags: master }
-    - { role: cni, tags: cni }
+    - { role: configure.cni, tags: cni }
 
 - hosts: k8s_node
   gather_facts: yes

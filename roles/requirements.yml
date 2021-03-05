@@ -23,3 +23,8 @@
   scm: git
   version: "master"
   name: commons
+
+- src: git@gitlab.fast-servers.eu:galaxy-roles/configure.cni.git
+  scm: git
+  version: "master"
+  name: configure.cni

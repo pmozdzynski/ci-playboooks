@@ -31,6 +31,7 @@
   gather_facts: yes
   become: yes
   roles:
+    - { role: configure.docker, tags: docker }
     - { role: configure.kubernetes/master, tags: master }
     - { role: configure.cni, tags: cni }
 
@@ -38,6 +39,7 @@
   gather_facts: yes
   become: yes
   roles:
+    - { role: configure.docker, tags: docker }
     - { role: configure.kubernetes/node, tags: node }
 
 - hosts: k8s_master

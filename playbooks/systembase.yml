@@ -21,12 +21,6 @@
   tasks:
     - debug: msg="{{ ansible_local.build_completed }}"
 
-- hosts: '{{ limit_hostgroup }}'
-  gather_facts: yes
-  become: yes
-  roles:
-    - { role: configure.docker, tags: docker, when: dockerserver }
-
 - hosts: k8s_master
   gather_facts: yes
   become: yes

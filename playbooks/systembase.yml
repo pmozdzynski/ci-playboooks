@@ -25,7 +25,7 @@
   gather_facts: yes
   become: yes
   roles:
-    - { role: configure.docker, tags: docker, when: "'kubernetz' in {{ group_names }}" }
+    - { role: configure.docker, tags: docker, when: 'kubernetz' in {{ group_names }} }
 
 - hosts: k8s_master
   gather_facts: yes

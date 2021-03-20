@@ -21,11 +21,12 @@
   tasks:
     - debug: msg="{{ ansible_local.build_completed }}"
 
-- hosts: kubernetz
+- hosts: '{{ limit_hostgroup }}'
   gather_facts: yes
   become: yes
   roles:
     - { role: configure.docker, tags: docker }
+  when: "'kubernetz' in {{ group_names }}"
 
 - hosts: k8s_master
   gather_facts: yes

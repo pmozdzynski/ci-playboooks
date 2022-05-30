@@ -28,3 +28,8 @@
   scm: git
   version: "master"
   name: configure.cni
+
+- src: git@gitlab.fast-servers.eu:galaxy-roles/base.packages.git
+  scm: git
+  version: "master"
+  name: base.packages

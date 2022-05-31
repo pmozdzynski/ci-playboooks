@@ -1,8 +1,0 @@
----
-- hosts: k8s_node
-  gather_facts: yes
-  become: yes
-  roles:
-    - { role: configure.docker, tags: master }
-    - { role: base.packages, tags: master }
-

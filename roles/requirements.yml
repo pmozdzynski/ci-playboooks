@@ -1,30 +1,30 @@
 ---
-- src: git@gitlab.fast-servers.eu:galaxy-roles/vmware.guest.git
+- src: git@github.com:pmozdzynski/vmware.guest.git
   scm: git
   version: "develop"
   name: vmware.guest
 
-- src: git@gitlab.fast-servers.eu:galaxy-roles/base.vm.git
+- src: git@github.com:pmozdzynski/base.vm.git
   scm: git
   version: "master"
   name: base.vm
 
-- src: git@gitlab.fast-servers.eu:galaxy-roles/configure.docker.git
+- src: git@github.com:pmozdzynski/configure.docker.git
   scm: git
   version: "master"
   name: configure.docker
 
-- src: git@gitlab.fast-servers.eu:galaxy-roles/configure.kubernetes.git
+- src: git@github.com:pmozdzynski/configure.kubernetes.git
   scm: git
   version: "master"
   name: configure.kubernetes
 
-- src: git@gitlab.fast-servers.eu:galaxy-roles/commons.git
+- src: git@github.com:pmozdzynski/commons.git
   scm: git
   version: "master"
   name: commons
 
-- src: git@gitlab.fast-servers.eu:galaxy-roles/configure.cni.git
+- src: git@github.com:pmozdzynski/configure.cni.git
   scm: git
   version: "master"
   name: configure.cni

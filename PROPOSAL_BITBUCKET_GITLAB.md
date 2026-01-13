@@ -81,7 +81,7 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
            ▼
 ┌─────────────────────────────────────┐
 │      GitLab CE (Self-Hosted)        │
-│  - Pipeline orchestration            │
+│  - Pipeline orchestration           │
 │  - Stores .gitlab-ci.yml            │
 │  - Option 1: Minimal metadata       │
 │  - Option 2: Full repository mirror │
@@ -95,7 +95,7 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 │      GitLab Runners                 │
 │  - Clone from Bitbucket (Option 1)  │
 │  - Clone from GitLab (Option 2)     │
-│  - Execute infrastructure jobs       │
+│  - Execute infrastructure jobs      │
 │  - Report logs/artifacts to GitLab  │
 └─────────────────────────────────────┘
 ```

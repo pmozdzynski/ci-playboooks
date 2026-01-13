@@ -61,6 +61,16 @@ ci-playboooks/
 
 This project is configured to run in GitLab CI/CD while the source code is maintained in GitHub.
 
+**Architecture:** GitHub (source of truth) → GitLab CE (CI/CD orchestration only) → GitLab Runners (execute jobs)
+
+This setup allows you to:
+- Keep code in GitHub (no disruption to developer workflows)
+- Use GitLab CE self-hosted only for CI/CD (minimal storage usage)
+- Trigger pipelines via GitHub webhooks
+- Full pipeline visibility in GitLab UI
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for architecture details and [SETUP_GITHUB_GITLAB.md](./SETUP_GITHUB_GITLAB.md) for complete setup instructions.
+
 ### Setup
 
 See [GITLAB_CI_SETUP.md](./GITLAB_CI_SETUP.md) for detailed instructions on:

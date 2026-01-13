@@ -4,7 +4,8 @@ stages:
 
 variables:
   ANSIBLE_FORCE_COLOR: 'true'
-  GIT_DEPTH: 10
+  # Shallow clone to save time and storage (especially important when cloning from GitHub)
+  GIT_DEPTH: 1
   GIT_STRATEGY: clone
   # Default inventory path - can be overridden via CI/CD variables
   INVENTORY_PATH: "/opt/jenkins/inventories/fse/fse-internal"
@@ -14,6 +15,9 @@ variables:
   ANSIBLE_ROLES_PATH: "${CI_PROJECT_DIR}/roles"
   # Temporary directory for secrets from GitLab variables
   SECRETS_TMP_DIR: "${CI_PROJECT_DIR}/.secrets"
+  # GitHub repository URL (set as CI/CD variable if using webhook triggers with GitHub clones)
+  # Format: https://github.com/USERNAME/REPO.git or git@github.com:USERNAME/REPO.git
+  GITHUB_REPO_URL: ""
 
 before_script:
   - |
@@ -23,7 +27,22 @@ before_script:
     echo "Project: ${CI_PROJECT_NAME}"
     echo "Branch: ${CI_COMMIT_REF_NAME}"
     echo "Commit: ${CI_COMMIT_SHORT_SHA}"
+    echo "Pipeline Source: ${CI_PIPELINE_SOURCE}"
     echo "=========================================="
+  # If using GitHub webhook triggers, optionally clone from GitHub
+  # This is useful when GitLab project is minimal and code is in GitHub
+  - |
+    if [ -n "${GITHUB_REPO_URL}" ] && [ "${CI_PIPELINE_SOURCE}" == "trigger" ]; then
+      echo "Pipeline triggered via webhook - checking if we need to clone from GitHub"
+      echo "GitHub Repo: ${GITHUB_REPO_URL}"
+      echo "Current directory contents:"
+      ls -la
+      # Note: GitLab runner will have already cloned from GitLab
+      # If you need to use GitHub code directly, you can clone it here
+      # Uncomment the following if you need to override with GitHub code:
+      # echo "Cloning from GitHub: ${GITHUB_REPO_URL}"
+      # git clone --depth 1 --branch "${CI_COMMIT_REF_NAME:-master}" "${GITHUB_REPO_URL}" "${CI_PROJECT_DIR}/github-repo" || true
+    fi
   - ansible --version
   - python3 --version || python --version
   # Install Ansible Galaxy roles

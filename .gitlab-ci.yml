@@ -43,12 +43,20 @@ before_script:
       # echo "Cloning from GitHub: ${GITHUB_REPO_URL}"
       # git clone --depth 1 --branch "${CI_COMMIT_REF_NAME:-master}" "${GITHUB_REPO_URL}" "${CI_PROJECT_DIR}/github-repo" || true
     fi
-  - ansible --version
+  # Verify required tools are installed
+  - ansible --version || (echo "Error: Ansible not installed" && exit 1)
+  - terraform --version || (echo "Warning: Terraform not installed" && exit 0)
+  - kapp version || (echo "Warning: kapp not installed" && exit 0)
+  - kubectl version --client || (echo "Warning: kubectl not installed" && exit 0)
   - python3 --version || python --version
-  # Install Ansible Galaxy roles
+  # Install Ansible Galaxy roles (if roles/requirements.yml exists)
   - |
-    echo "Installing Ansible Galaxy roles..."
-    ansible-galaxy install -r roles/requirements.yml --force
+    if [ -f "roles/requirements.yml" ]; then
+      echo "Installing Ansible Galaxy roles..."
+      ansible-galaxy install -r roles/requirements.yml --force
+    else
+      echo "No roles/requirements.yml found, skipping role installation"
+    fi
   # Verify inventory exists
   - |
     if [ ! -f "${INVENTORY_PATH}" ] && [ ! -d "${INVENTORY_PATH}" ]; then
@@ -178,8 +186,8 @@ deploy_systembase_bac:
         playbooks/systembase_bac.yaml \
         -i "${INVENTORY_PATH}" \
         -f 5 \
-        --private-key "${SECRETS_PATH}/ansible.key" \
-        --vault-password-file "${SECRETS_PATH}/vault.txt" \
+        --private-key "${ANSIBLE_KEY_PATH}" \
+        --vault-password-file "${ANSIBLE_VAULT_PASSWORD_PATH}" \
         -e "limit_hostgroup=${LIMIT_HOSTGROUP:-fse_gibraltar}" \
         -e "use_vcenter=${USE_VCENTER:-true}" \
         -e "vcenter_username=${VCENTER_USERNAME:-administrator@vsphere.local}" \
@@ -190,7 +198,7 @@ deploy_systembase_bac:
     name: production
     url: https://vcenter.example.com
 
-# Deploy Kubernetes site
+# Deploy Kubernetes site (Ansible)
 deploy_kubernetes:
   stage: deploy
   tags:
@@ -200,7 +208,7 @@ deploy_kubernetes:
     - main
   script:
     - |
-      echo "Starting Kubernetes deployment..."
+      echo "Starting Kubernetes deployment (Ansible)..."
       echo "Inventory: ${INVENTORY_PATH}"
       ansible-playbook \
         playbooks/kubernetes_site.yaml \
@@ -211,6 +219,99 @@ deploy_kubernetes:
   when: manual
   environment:
     name: kubernetes
+    url: https://kubernetes.example.com
+
+# Terraform: Plan infrastructure changes
+terraform_plan:
+  stage: validate
+  tags:
+    - fse-gibraltar
+  only:
+    - merge_requests
+    - branches
+  script:
+    - |
+      echo "Running Terraform plan..."
+      if [ -d "terraform" ] || [ -f "*.tf" ]; then
+        terraform init -backend-config="${TF_BACKEND_CONFIG:-backend.hcl}" || terraform init
+        terraform plan -out=tfplan
+        echo "Terraform plan completed successfully"
+      else
+        echo "No Terraform files found, skipping..."
+        exit 0
+      fi
+  artifacts:
+    paths:
+      - tfplan
+    expire_in: 1 week
+  allow_failure: true
+
+# Terraform: Apply infrastructure changes
+terraform_apply:
+  stage: deploy
+  tags:
+    - fse-gibraltar
+  only:
+    - master
+    - main
+  dependencies:
+    - terraform_plan
+  script:
+    - |
+      echo "Applying Terraform changes..."
+      if [ -f "tfplan" ]; then
+        terraform init -backend-config="${TF_BACKEND_CONFIG:-backend.hcl}" || terraform init
+        terraform apply -auto-approve tfplan
+        echo "Terraform apply completed successfully"
+      else
+        echo "No Terraform plan found, skipping..."
+        exit 0
+      fi
+  when: manual
+  environment:
+    name: infrastructure
+    url: https://terraform.example.com
+
+# kapp: Deploy Kubernetes applications
+kapp_deploy:
+  stage: deploy
+  tags:
+    - fse-gibraltar
+  only:
+    - master
+    - main
+  script:
+    - |
+      echo "Deploying Kubernetes applications with kapp..."
+      if [ -d "kapp" ] || [ -f "kapp.yml" ] || [ -f "*.kapp.yml" ]; then
+        # Set kubeconfig if provided as variable
+        if [ -n "${KUBECONFIG_FILE}" ] && [ -f "${KUBECONFIG_FILE}" ]; then
+          export KUBECONFIG="${KUBECONFIG_FILE}"
+        fi
+        
+        # Deploy with kapp
+        if [ -f "kapp.yml" ]; then
+          kapp deploy -a ${KAPP_APP_NAME:-app} -f kapp.yml -y
+        elif [ -d "kapp" ]; then
+          kapp deploy -a ${KAPP_APP_NAME:-app} -f kapp/ -y
+        else
+          # Find kapp yaml files
+          KAPP_FILES=$(find . -name "*.kapp.yml" -o -name "kapp.yml")
+          if [ -n "${KAPP_FILES}" ]; then
+            kapp deploy -a ${KAPP_APP_NAME:-app} -f ${KAPP_FILES} -y
+          else
+            echo "No kapp configuration files found"
+            exit 0
+          fi
+        fi
+        echo "kapp deployment completed successfully"
+      else
+        echo "No kapp configuration found, skipping..."
+        exit 0
+      fi
+  when: manual
+  environment:
+    name: kubernetes-apps
     url: https://kubernetes.example.com
 
 # Cleanup secrets after job (security best practice)

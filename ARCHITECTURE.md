@@ -101,7 +101,10 @@ This architecture supports:
 2. **GitHub webhook or GitHub Actions triggers GitLab pipeline** (via secure trigger token)
 3. **GitLab CE evaluates workflow rules** (branches/tags in `.gitlab-ci.yml`)
 4. **GitLab Runner clones only the required branch/tag** from GitHub (shallow clone)
-5. **Runner executes Ansible playbooks** and other jobs
+5. **Runner executes infrastructure automation jobs:**
+   - Ansible playbooks for configuration management
+   - Terraform for infrastructure provisioning
+   - kapp for Kubernetes application deployment
 6. **Job results, logs, and artifacts** are reported back to GitLab CE
 
 ### Bitbucket Workflow
@@ -109,7 +112,10 @@ This architecture supports:
 2. **Bitbucket webhook or post-receive hook triggers GitLab pipeline** (via secure trigger token)
 3. **GitLab CE evaluates workflow rules** (branches/tags in `.gitlab-ci.yml`)
 4. **GitLab Runner clones only the required branch/tag** from Bitbucket (shallow clone)
-5. **Runner executes Ansible playbooks** and other jobs
+5. **Runner executes infrastructure automation jobs:**
+   - Ansible playbooks for configuration management
+   - Terraform for infrastructure provisioning
+   - kapp for Kubernetes application deployment
 6. **Job results, logs, and artifacts** are reported back to GitLab CE
 
 ## Key Features

@@ -12,7 +12,10 @@
 This proposal outlines the integration of GitLab CE (self-hosted) for CI/CD orchestration with Bitbucket Server/Data Center as the source code repository. The proposal presents two implementation options with different storage and operational characteristics, allowing stakeholders to choose the approach that best fits organizational needs.
 
 **Key Objectives:**
-- Implement automated CI/CD pipelines for Ansible playbooks
+- Implement automated CI/CD pipelines for infrastructure automation tools:
+  - **Ansible** playbooks for configuration management and provisioning
+  - **Terraform** for infrastructure as code (IaC)
+  - **kapp** (Carvel) for Kubernetes application deployment
 - Maintain Bitbucket as the primary code repository (no disruption to developers)
 - Leverage GitLab CE for CI/CD orchestration and pipeline visibility
 - Provide flexible deployment options based on storage and operational requirements
@@ -44,8 +47,11 @@ This proposal outlines the integration of GitLab CE (self-hosted) for CI/CD orch
 
 - **Source Repository:** Bitbucket Server/Data Center
 - **Code Management:** Git-based version control
-- **Deployment Tools:** Ansible playbooks for infrastructure automation
-- **Target Environments:** VMware vSphere, Kubernetes clusters, Docker hosts
+- **Deployment Tools:**
+  - **Ansible** playbooks for configuration management and system provisioning
+  - **Terraform** for infrastructure as code (cloud resources, networking, etc.)
+  - **kapp** (Carvel) for Kubernetes application deployment and management
+- **Target Environments:** VMware vSphere, Kubernetes clusters, Docker hosts, Cloud infrastructure (AWS/Azure/GCP)
 
 ---
 
@@ -77,7 +83,7 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 │      GitLab CE (Self-Hosted)        │
 │  - Pipeline orchestration            │
 │  - Stores .gitlab-ci.yml            │
-│  - Option 1: Minimal metadata      │
+│  - Option 1: Minimal metadata       │
 │  - Option 2: Full repository mirror │
 │  - AD/LDAP authentication           │
 └──────────┬──────────────────────────┘
@@ -89,7 +95,7 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 │      GitLab Runners                 │
 │  - Clone from Bitbucket (Option 1)  │
 │  - Clone from GitLab (Option 2)     │
-│  - Execute Ansible playbooks        │
+│  - Execute infrastructure jobs       │
 │  - Report logs/artifacts to GitLab  │
 └─────────────────────────────────────┘
 ```
@@ -190,7 +196,10 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 3. GitLab webhook or manual trigger starts pipeline
 4. GitLab CE evaluates workflow rules in `.gitlab-ci.yml`
 5. GitLab Runner clones from GitLab (local, fast)
-6. Runner executes Ansible playbooks and other jobs
+6. Runner executes infrastructure automation jobs:
+   - Ansible playbooks for configuration management
+   - Terraform for infrastructure provisioning
+   - kapp for Kubernetes application deployment
 7. Job results, logs, and artifacts are reported back to GitLab CE
 
 #### 3.2.2 Storage Requirements
@@ -344,20 +353,32 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 
 3. **Set Up GitLab Runner**
    - Install and register GitLab Runner
+   - Install required tools:
+     - Ansible (with Python dependencies)
+     - Terraform
+     - kapp (Carvel tools)
+     - kubectl (for Kubernetes operations)
    - Configure runner to access Bitbucket
    - Test runner connectivity
 
 4. **Configure CI/CD Variables**
-   - Add secrets to GitLab CI/CD variables
-   - Configure inventory paths
+   - Add secrets to GitLab CI/CD variables:
+     - SSH keys for Ansible
+     - Cloud provider credentials for Terraform
+     - Kubernetes kubeconfig for kapp
+   - Configure inventory paths (Ansible)
+   - Configure Terraform backend configuration
    - Set up environment variables
 
 5. **Test Pipeline**
-   - Trigger test pipeline
+   - Trigger test pipeline for each tool:
+     - Ansible playbook execution
+     - Terraform plan/apply
+     - kapp deployment
    - Verify execution
    - Review logs and artifacts
 
-**Estimated Time:** 2-4 hours
+**Estimated Time:** 4-6 hours (includes tool installation and configuration)
 
 ### 6.2 Option 2 Implementation Steps
 
@@ -372,20 +393,32 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 
 3. **Set Up GitLab Runner**
    - Install and register GitLab Runner
+   - Install required tools:
+     - Ansible (with Python dependencies)
+     - Terraform
+     - kapp (Carvel tools)
+     - kubectl (for Kubernetes operations)
    - Configure runner (no Bitbucket access needed)
    - Test runner connectivity
 
 4. **Configure CI/CD Variables**
-   - Add secrets to GitLab CI/CD variables
-   - Configure inventory paths
+   - Add secrets to GitLab CI/CD variables:
+     - SSH keys for Ansible
+     - Cloud provider credentials for Terraform
+     - Kubernetes kubeconfig for kapp
+   - Configure inventory paths (Ansible)
+   - Configure Terraform backend configuration
    - Set up environment variables
 
 5. **Test Pipeline**
-   - Trigger test pipeline
+   - Trigger test pipeline for each tool:
+     - Ansible playbook execution
+     - Terraform plan/apply
+     - kapp deployment
    - Verify execution
    - Review logs and artifacts
 
-**Estimated Time:** 1-2 hours
+**Estimated Time:** 3-4 hours (includes tool installation and configuration)
 
 ### 6.3 Common Requirements (Both Options)
 
@@ -393,7 +426,21 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 - GitLab Runner(s) on on-premises servers
 - Network connectivity (Bitbucket ↔ GitLab ↔ Runners)
 - Active Directory/LDAP integration (optional)
-- Inventory files and secrets management
+- **Required Tools on Runners:**
+  - **Ansible** 2.9+ with Python 3 and required modules (pyvmomi, etc.)
+  - **Terraform** latest stable version
+  - **kapp** (Carvel) latest version
+  - **kubectl** for Kubernetes operations
+  - **Git** for repository cloning
+- **Secrets Management:**
+  - SSH keys for Ansible (stored in GitLab CI/CD variables)
+  - Cloud provider credentials for Terraform (AWS/Azure/GCP)
+  - Kubernetes kubeconfig files for kapp
+  - Ansible vault passwords
+- **Configuration Files:**
+  - Ansible inventory files
+  - Terraform backend configuration
+  - Kubernetes cluster access configuration
 
 ---
 

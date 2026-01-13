@@ -1,15 +1,29 @@
-# CI Playbooks - Ansible Automation
+# CI/CD Pipelines - Infrastructure Automation
 
-This directory contains Ansible playbooks for automating infrastructure provisioning and configuration, with GitLab CI/CD integration.
+This directory contains CI/CD pipeline configurations for automating infrastructure provisioning, configuration management, and application deployment using multiple tools, with GitLab CI/CD integration.
 
 ## Overview
 
-The playbooks in this directory automate:
+The CI/CD pipelines support multiple infrastructure automation tools:
+
+### Ansible
 - VMware guest provisioning (VM creation from templates)
 - Base VM configuration (networking, certificates, NFS, etc.)
 - Docker installation and configuration
 - Kubernetes cluster setup (masters and nodes)
 - CNI (Container Network Interface) configuration
+
+### Terraform
+- Infrastructure as Code (IaC) for cloud resources
+- Network infrastructure provisioning
+- Resource lifecycle management
+- State management and collaboration
+
+### kapp (Carvel)
+- Kubernetes application deployment
+- Application lifecycle management
+- Multi-resource application orchestration
+- Change tracking and rollback capabilities
 
 ## Structure
 
@@ -31,11 +45,25 @@ ci-playboooks/
 
 ### Prerequisites
 
+**Common Requirements:**
+- GitLab runner configured (see setup guide)
+- Network access to target environments
+
+**Ansible:**
 - Ansible 2.9+
 - Python 3 with `pyvmomi` package
 - Access to vCenter/vSphere
 - SSH access to target hosts
-- GitLab runner configured (see setup guide)
+
+**Terraform:**
+- Terraform latest stable version
+- Cloud provider credentials (AWS/Azure/GCP)
+- Terraform backend configuration (optional)
+
+**kapp:**
+- kapp (Carvel) latest version
+- kubectl configured
+- Kubernetes cluster access (kubeconfig)
 
 ### Running Playbooks Locally
 
@@ -81,11 +109,17 @@ See [GITLAB_CI_SETUP.md](./GITLAB_CI_SETUP.md) for detailed instructions on:
 
 ### Pipeline Stages
 
-1. **Validate**: Syntax checks on playbooks (runs automatically)
+1. **Validate**: Syntax checks and validation (runs automatically)
+   - Ansible playbook syntax validation
+   - Terraform plan (dry-run)
+   - kapp configuration validation
+
 2. **Deploy**: Manual deployment jobs for:
-   - `deploy_systembase`: Base system provisioning
-   - `deploy_systembase_bac`: Alternative base system playbook
-   - `deploy_kubernetes`: Kubernetes cluster setup
+   - `deploy_systembase`: Base system provisioning (Ansible)
+   - `deploy_systembase_bac`: Alternative base system playbook (Ansible)
+   - `deploy_kubernetes`: Kubernetes cluster setup (Ansible)
+   - `terraform_apply`: Infrastructure provisioning (Terraform)
+   - `kapp_deploy`: Kubernetes application deployment (kapp)
 
 ### Quick Setup Commands
 

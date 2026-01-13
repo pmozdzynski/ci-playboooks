@@ -49,9 +49,9 @@ This proposal outlines the integration of GitLab CE (self-hosted) for CI/CD orch
 - **Code Management:** Git-based version control
 - **Deployment Tools:**
   - **Ansible** playbooks for configuration management and system provisioning
-  - **Terraform** for infrastructure as code (cloud resources, networking, etc.)
+  - **Terraform** for infrastructure as code (on-premises resources, networking, storage, etc.)
   - **kapp** (Carvel) for Kubernetes application deployment and management
-- **Target Environments:** VMware vSphere, Kubernetes clusters, Docker hosts, Cloud infrastructure (AWS/Azure/GCP)
+- **Target Environments:** VMware vSphere, Kubernetes clusters, Docker hosts (all on-premises)
 
 ---
 
@@ -364,10 +364,10 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 4. **Configure CI/CD Variables**
    - Add secrets to GitLab CI/CD variables:
      - SSH keys for Ansible
-     - Cloud provider credentials for Terraform
+     - Infrastructure provider credentials for Terraform (vCenter, storage, networking)
      - Kubernetes kubeconfig for kapp
    - Configure inventory paths (Ansible)
-   - Configure Terraform backend configuration
+   - Configure Terraform backend configuration (on-premises storage)
    - Set up environment variables
 
 5. **Test Pipeline**
@@ -404,10 +404,10 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
 4. **Configure CI/CD Variables**
    - Add secrets to GitLab CI/CD variables:
      - SSH keys for Ansible
-     - Cloud provider credentials for Terraform
+     - Infrastructure provider credentials for Terraform (vCenter, storage, networking)
      - Kubernetes kubeconfig for kapp
    - Configure inventory paths (Ansible)
-   - Configure Terraform backend configuration
+   - Configure Terraform backend configuration (on-premises storage)
    - Set up environment variables
 
 5. **Test Pipeline**
@@ -434,7 +434,7 @@ The proposed solution integrates GitLab CE (self-hosted) with Bitbucket Server/D
   - **Git** for repository cloning
 - **Secrets Management:**
   - SSH keys for Ansible (stored in GitLab CI/CD variables)
-  - Cloud provider credentials for Terraform (AWS/Azure/GCP)
+  - Infrastructure provider credentials for Terraform (vCenter, storage systems, network devices)
   - Kubernetes kubeconfig files for kapp
   - Ansible vault passwords
 - **Configuration Files:**

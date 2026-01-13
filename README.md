@@ -57,8 +57,8 @@ ci-playboooks/
 
 **Terraform:**
 - Terraform latest stable version
-- Cloud provider credentials (AWS/Azure/GCP)
-- Terraform backend configuration (optional)
+- Infrastructure provider credentials (vCenter, storage systems, network devices)
+- Terraform backend configuration (on-premises storage or local)
 
 **kapp:**
 - kapp (Carvel) latest version

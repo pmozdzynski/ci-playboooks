@@ -100,23 +100,31 @@ terraform init  # Test in a terraform directory
 ### Configuration
 
 - **Backend Configuration**: Store in `backend.hcl` or set via `TF_BACKEND_CONFIG` variable
-- **Cloud Credentials**: Store in GitLab CI/CD variables:
-  - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
-  - `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `AZURE_TENANT_ID`
-  - `GOOGLE_APPLICATION_CREDENTIALS` (JSON file)
-- **State Management**: Use remote backends (S3, Azure Storage, GCS)
+- **Infrastructure Provider Credentials**: Store in GitLab CI/CD variables:
+  - vCenter credentials (for VMware provider)
+  - Storage system credentials (for storage provisioning)
+  - Network device credentials (for network automation)
+  - Other on-premises infrastructure provider credentials
+- **State Management**: Use remote backends (on-premises storage, GitLab, or local filesystem)
 
 ### Example Backend Configuration
 
 ```hcl
-# backend.hcl
+# backend.hcl - On-premises storage example
 terraform {
-  backend "s3" {
-    bucket = "terraform-state-bucket"
-    key    = "project/terraform.tfstate"
-    region = "us-east-1"
+  backend "local" {
+    path = "/opt/terraform/state/terraform.tfstate"
   }
 }
+
+# Or use GitLab as backend (if using GitLab Premium)
+# terraform {
+#   backend "http" {
+#     address = "https://gitlab.example.com/api/v4/projects/PROJECT_ID/terraform/state/default"
+#     lock_address = "https://gitlab.example.com/api/v4/projects/PROJECT_ID/terraform/state/default/lock"
+#     unlock_address = "https://gitlab.example.com/api/v4/projects/PROJECT_ID/terraform/state/default/lock"
+#   }
+# }
 ```
 
 ## kapp (Carvel) Setup
@@ -268,10 +276,10 @@ Configure these variables in GitLab (Settings → CI/CD → Variables):
 
 ### Terraform Variables
 - `TF_BACKEND_CONFIG` (path to backend.hcl)
-- `AWS_ACCESS_KEY_ID` (Protected, Masked)
-- `AWS_SECRET_ACCESS_KEY` (Protected, Masked)
-- `AWS_DEFAULT_REGION`
-- Or Azure/GCP equivalents
+- `VCENTER_USERNAME` (Protected)
+- `VCENTER_PASSWORD` (Protected, Masked)
+- `VCENTER_SERVER` (vCenter hostname/IP)
+- Infrastructure provider credentials (storage, networking, etc.)
 
 ### kapp Variables
 - `KUBECONFIG_FILE` (File type, Protected)
@@ -310,7 +318,7 @@ kapp list -A
 
 ### Terraform Issues
 - **Backend errors**: Verify backend configuration and credentials
-- **Provider errors**: Check cloud provider credentials
+- **Provider errors**: Check infrastructure provider credentials (vCenter, storage, networking)
 - **State lock**: Check for concurrent runs or stale locks
 
 ### kapp Issues

@@ -1,16 +1,203 @@
 stages:
+  - validate
   - deploy
 
 variables:
   ANSIBLE_FORCE_COLOR: 'true'
   GIT_DEPTH: 10
+  GIT_STRATEGY: clone
+  # Default inventory path - can be overridden via CI/CD variables
+  INVENTORY_PATH: "/opt/jenkins/inventories/fse/fse-internal"
+  # Default secrets path - can be overridden via CI/CD variables (only if not using GitLab variables)
+  SECRETS_PATH: "/opt/jenkins/secrets"
+  # Roles will be installed in the project directory
+  ANSIBLE_ROLES_PATH: "${CI_PROJECT_DIR}/roles"
+  # Temporary directory for secrets from GitLab variables
+  SECRETS_TMP_DIR: "${CI_PROJECT_DIR}/.secrets"
 
-update inventory:
-  stage: deploy
-  tags: 
+before_script:
+  - |
+    echo "=========================================="
+    echo "GitLab CI Pipeline for Ansible Playbooks"
+    echo "=========================================="
+    echo "Project: ${CI_PROJECT_NAME}"
+    echo "Branch: ${CI_COMMIT_REF_NAME}"
+    echo "Commit: ${CI_COMMIT_SHORT_SHA}"
+    echo "=========================================="
+  - ansible --version
+  - python3 --version || python --version
+  # Install Ansible Galaxy roles
+  - |
+    echo "Installing Ansible Galaxy roles..."
+    ansible-galaxy install -r roles/requirements.yml --force
+  # Verify inventory exists
+  - |
+    if [ ! -f "${INVENTORY_PATH}" ] && [ ! -d "${INVENTORY_PATH}" ]; then
+      echo "Warning: Inventory path ${INVENTORY_PATH} does not exist"
+      echo "Make sure the inventory is available on the GitLab runner"
+    fi
+  # Setup secrets from GitLab CI/CD variables (preferred method)
+  # GitLab File variables are automatically written to files - check for them first
+  - |
+    echo "Setting up secrets..."
+    mkdir -p "${SECRETS_TMP_DIR}"
+    chmod 700 "${SECRETS_TMP_DIR}"
+    
+    # Check if ANSIBLE_SSH_KEY_FILE variable exists (GitLab File variable)
+    # GitLab automatically creates a file and sets the variable to the file path
+    if [ -n "${ANSIBLE_SSH_KEY_FILE}" ] && [ -f "${ANSIBLE_SSH_KEY_FILE}" ]; then
+      echo "Using SSH key from GitLab File variable (ANSIBLE_SSH_KEY_FILE)"
+      ANSIBLE_KEY_PATH="${ANSIBLE_SSH_KEY_FILE}"
+    # Check if ANSIBLE_SSH_KEY variable exists (regular variable - we'll write it to a file)
+    elif [ -n "${ANSIBLE_SSH_KEY}" ]; then
+      echo "Using SSH key from GitLab variable (ANSIBLE_SSH_KEY)"
+      echo "${ANSIBLE_SSH_KEY}" > "${SECRETS_TMP_DIR}/ansible.key"
+      chmod 600 "${SECRETS_TMP_DIR}/ansible.key"
+      ANSIBLE_KEY_PATH="${SECRETS_TMP_DIR}/ansible.key"
+    # Fall back to file on runner filesystem
+    elif [ -f "${SECRETS_PATH}/ansible.key" ]; then
+      echo "Using SSH key from runner filesystem: ${SECRETS_PATH}/ansible.key"
+      ANSIBLE_KEY_PATH="${SECRETS_PATH}/ansible.key"
+      chmod 600 "${ANSIBLE_KEY_PATH}"
+    else
+      echo "Error: Ansible SSH key not found. Please configure one of:"
+      echo "  1. GitLab File variable: ANSIBLE_SSH_KEY_FILE (recommended)"
+      echo "  2. GitLab variable: ANSIBLE_SSH_KEY"
+      echo "  3. File on runner: ${SECRETS_PATH}/ansible.key"
+      exit 1
+    fi
+    export ANSIBLE_KEY_PATH
+    
+  # Setup vault password
+  - |
+    # Check if ANSIBLE_VAULT_PASSWORD_FILE variable exists (GitLab File variable)
+    if [ -n "${ANSIBLE_VAULT_PASSWORD_FILE}" ] && [ -f "${ANSIBLE_VAULT_PASSWORD_FILE}" ]; then
+      echo "Using vault password from GitLab File variable (ANSIBLE_VAULT_PASSWORD_FILE)"
+      ANSIBLE_VAULT_PASSWORD_PATH="${ANSIBLE_VAULT_PASSWORD_FILE}"
+    # Check if ANSIBLE_VAULT_PASSWORD variable exists
+    elif [ -n "${ANSIBLE_VAULT_PASSWORD}" ]; then
+      echo "Using vault password from GitLab variable (ANSIBLE_VAULT_PASSWORD)"
+      echo "${ANSIBLE_VAULT_PASSWORD}" > "${SECRETS_TMP_DIR}/vault.txt"
+      chmod 600 "${SECRETS_TMP_DIR}/vault.txt"
+      ANSIBLE_VAULT_PASSWORD_PATH="${SECRETS_TMP_DIR}/vault.txt"
+    # Fall back to file on runner filesystem
+    elif [ -f "${SECRETS_PATH}/vault.txt" ]; then
+      echo "Using vault password from runner filesystem: ${SECRETS_PATH}/vault.txt"
+      ANSIBLE_VAULT_PASSWORD_PATH="${SECRETS_PATH}/vault.txt"
+      chmod 600 "${ANSIBLE_VAULT_PASSWORD_PATH}"
+    else
+      echo "Error: Ansible vault password not found. Please configure one of:"
+      echo "  1. GitLab File variable: ANSIBLE_VAULT_PASSWORD_FILE (recommended)"
+      echo "  2. GitLab variable: ANSIBLE_VAULT_PASSWORD"
+      echo "  3. File on runner: ${SECRETS_PATH}/vault.txt"
+      exit 1
+    fi
+    export ANSIBLE_VAULT_PASSWORD_PATH
+
+# Validate playbooks syntax
+validate_playbooks:
+  stage: validate
+  tags:
     - fse-gibraltar
-  only: 
+  script:
+    - |
+      echo "Validating Ansible playbooks syntax..."
+      for playbook in playbooks/*.yml playbooks/*.yaml; do
+        if [ -f "$playbook" ]; then
+          echo "Validating: $playbook"
+          ansible-playbook --syntax-check "$playbook" -i "${INVENTORY_PATH}" || true
+        fi
+      done
+  allow_failure: true
+  only:
+    - merge_requests
+    - branches
+
+# Deploy systembase playbook
+deploy_systembase:
+  stage: deploy
+  tags:
+    - fse-gibraltar
+  only:
     - master
-  script: 
-    - echo "starting systembase"
-    - ansible-playbook playbooks/systembase.yml -i $inventory -f 5 --private-key /opt/jenkins/secrets/ansible.key  --vault-password-file /opt/jenkins/secrets/vault.txt -e limit_hostgroup=$limit_hostgroup -e use_vcenter=true -e vcenter_username=administrator@vsphere.local -e newinstall=true -e vcenter_password=$vcenter_password ; done
+    - main
+  script:
+    - |
+      echo "Starting systembase deployment..."
+      echo "Inventory: ${INVENTORY_PATH}"
+      echo "Limit hostgroup: ${LIMIT_HOSTGROUP:-fse_gibraltar}"
+      ansible-playbook \
+        playbooks/systembase.yml \
+        -i "${INVENTORY_PATH}" \
+        -f 5 \
+        --private-key "${ANSIBLE_KEY_PATH}" \
+        --vault-password-file "${ANSIBLE_VAULT_PASSWORD_PATH}" \
+        -e "limit_hostgroup=${LIMIT_HOSTGROUP:-fse_gibraltar}" \
+        -e "use_vcenter=${USE_VCENTER:-true}" \
+        -e "vcenter_username=${VCENTER_USERNAME:-administrator@vsphere.local}" \
+        -e "newinstall=${NEWINSTALL:-true}" \
+        -e "vcenter_password=${VCENTER_PASSWORD}"
+  when: manual
+  environment:
+    name: production
+    url: https://vcenter.example.com
+
+# Deploy systembase_bac playbook (backup/alternative)
+deploy_systembase_bac:
+  stage: deploy
+  tags:
+    - fse-gibraltar
+  only:
+    - master
+    - main
+  script:
+    - |
+      echo "Starting systembase_bac deployment..."
+      echo "Inventory: ${INVENTORY_PATH}"
+      echo "Limit hostgroup: ${LIMIT_HOSTGROUP:-fse_gibraltar}"
+      ansible-playbook \
+        playbooks/systembase_bac.yaml \
+        -i "${INVENTORY_PATH}" \
+        -f 5 \
+        --private-key "${SECRETS_PATH}/ansible.key" \
+        --vault-password-file "${SECRETS_PATH}/vault.txt" \
+        -e "limit_hostgroup=${LIMIT_HOSTGROUP:-fse_gibraltar}" \
+        -e "use_vcenter=${USE_VCENTER:-true}" \
+        -e "vcenter_username=${VCENTER_USERNAME:-administrator@vsphere.local}" \
+        -e "newinstall=${NEWINSTALL:-true}" \
+        -e "vcenter_password=${VCENTER_PASSWORD}"
+  when: manual
+  environment:
+    name: production
+    url: https://vcenter.example.com
+
+# Deploy Kubernetes site
+deploy_kubernetes:
+  stage: deploy
+  tags:
+    - fse-gibraltar
+  only:
+    - master
+    - main
+  script:
+    - |
+      echo "Starting Kubernetes deployment..."
+      echo "Inventory: ${INVENTORY_PATH}"
+      ansible-playbook \
+        playbooks/kubernetes_site.yaml \
+        -i "${INVENTORY_PATH}" \
+        -f 5 \
+        --private-key "${ANSIBLE_KEY_PATH}" \
+        --vault-password-file "${ANSIBLE_VAULT_PASSWORD_PATH}"
+  when: manual
+  environment:
+    name: kubernetes
+    url: https://kubernetes.example.com
+
+# Cleanup secrets after job (security best practice)
+after_script:
+  - |
+    if [ -d "${SECRETS_TMP_DIR}" ]; then
+      echo "Cleaning up temporary secrets..."
+      rm -rf "${SECRETS_TMP_DIR}"
+    fi
